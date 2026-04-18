@@ -33,13 +33,17 @@ def fetch_news(topic):
 
 
 # --- Test it right here ---
+# --- Test with real API ---
 if __name__ == "__main__":
+    from summarizer import summarize_articles   # import your summarizer
+
     topic = input("Enter a news topic: ")
     results = fetch_news(topic)
-    
-    for i, article in enumerate(results, 1):
+    summarized = summarize_articles(results)    # run summarizer on results
+
+    for i, article in enumerate(summarized, 1):
         print(f"\n--- Article {i} ---")
-        print(f"Title      : {article['title']}")
-        print(f"Source     : {article['source']}")
-        print(f"Description: {article['description']}")
-        print(f"Link       : {article['url']}")
+        print(f"Title  : {article['title']}")
+        print(f"Source : {article['source']}")
+        print(f"Summary: {article['summary']}")
+        print(f"Link   : {article['url']}")
