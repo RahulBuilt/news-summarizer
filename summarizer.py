@@ -1,38 +1,48 @@
-import re
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
+import os
 
-def summarize(text, max_sentences=2):
-    # If no text, return a default message
-    if not text or text.strip() == "":
-        return "No summary available."
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyA5N8o_BT3h_7Tt46XiWwQsqI6p5sB5VgQ")
 
-    # Clean up extra spaces and newlines
-    text = text.strip()
-    text = re.sub(r'\s+', ' ', text)  # replace multiple spaces with one
+llm = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash",
+    google_api_key=GEMINI_API_KEY,
+    temperature=0.3
+)
 
-    # Split into sentences
-    # This splits at . ! ? followed by a space and capital letter
-    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
 
-    # Remove very short sentences (less than 5 words) - they're usually noise
-    sentences = [s for s in sentences if len(s.split()) >= 5]
+def summarize_with_gemini(title, description):
+    """Use Gemini to generate a smart 2-sentence summary"""
 
-    # Take only the first max_sentences
-    summary = ' '.join(sentences[:max_sentences])
+    if not description or description.strip() == "":
+        return "No summary available for this article."
 
-    # If summary is still empty after filtering, return original text trimmed
-    if not summary:
-        return text[:200] + "..." if len(text) > 200 else text
+    prompt = f"""You are a news summarizer. Given the article title and description below, 
+write a clear and concise 2-sentence summary that captures the key information.
+Do not use phrases like 'This article' or 'The article'. Just summarize directly.
 
-    return summary
+Title: {title}
+Description: {description}
+
+Summary:"""
+
+    try:
+        response = llm.invoke([HumanMessage(content=prompt)])
+        return response.content.strip()
+    except Exception as e:
+        print(f"Gemini error: {e}")
+        # fallback to basic summarizer if Gemini fails
+        return description[:200] + "..." if len(description) > 200 else description
 
 
 def summarize_articles(articles):
+    """Summarize a list of articles using Gemini"""
     summarized = []
 
     for article in articles:
         summarized.append({
             "title": article["title"],
-            "summary": summarize(article["description"]),
+            "summary": summarize_with_gemini(article["title"], article["description"]),
             "url": article["url"],
             "source": article["source"]
         })
@@ -40,35 +50,16 @@ def summarize_articles(articles):
     return summarized
 
 
-# --- Test it right here ---
+# --- Test it ---
 if __name__ == "__main__":
-    # Fake test data so you can test without calling the API
-    test_articles = [
-        {
-            "title": "India wins cricket match against Australia",
-            "description": "India defeated Australia by 6 wickets in a thrilling match. The match was played in Mumbai. Virat Kohli scored a brilliant century. The crowd was absolutely electric throughout the game. Australia fought hard but could not defend their total.",
-            "url": "https://example.com/article1",
-            "source": "ESPN"
-        },
-        {
-            "title": "New AI model released by Google",
-            "description": "Google has released a new AI model that can understand images and text together. This is a significant step forward. The model was trained on billions of data points. Experts say it could change how we search the internet.",
-            "url": "https://example.com/article2",
-            "source": "TechCrunch"
-        },
-        {
-            "title": "No description article",
-            "description": "",
-            "url": "https://example.com/article3",
-            "source": "BBC"
-        }
-    ]
+    test = [{
+        "title": "India wins cricket match against Australia",
+        "description": "India defeated Australia by 6 wickets in Mumbai. Virat Kohli scored a century. The crowd was electric throughout.",
+        "url": "https://example.com",
+        "source": "ESPN"
+    }]
 
-    results = summarize_articles(test_articles)
-
-    for i, article in enumerate(results, 1):
-        print(f"\n--- Article {i} ---")
-        print(f"Title  : {article['title']}")
-        print(f"Source : {article['source']}")
-        print(f"Summary: {article['summary']}")
-        print(f"Link   : {article['url']}")
+    results = summarize_articles(test)
+    for r in results:
+        print(f"Title: {r['title']}")
+        print(f"Summary: {r['summary']}")

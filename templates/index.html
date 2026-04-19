@@ -27,7 +27,7 @@
     .search-box {
       display: flex;
       justify-content: center;
-      padding: 32px 16px;
+      padding: 32px 16px 16px;
       gap: 12px;
     }
 
@@ -75,9 +75,37 @@
       font-size: 18px;
       color: #555;
       margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .results-title span { color: #2c3e50; font-weight: 600; }
+    .results-title span.topic { color: #2c3e50; font-weight: 600; }
+
+    .cache-badge {
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .recent-searches {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .recent-searches a {
+      color: #2980b9;
+      text-decoration: none;
+      margin: 0 6px;
+    }
+
+    .recent-searches a:hover { text-decoration: underline; }
 
     .card {
       background: white;
@@ -134,7 +162,7 @@
 
   <header>
     <h1>News Summarizer</h1>
-    <p>Search any topic and get the top 5 news summaries instantly</p>
+    <p>Search any topic and get AI-powered summaries instantly</p>
   </header>
 
   <div class="search-box">
@@ -156,9 +184,25 @@
       <div class="error">{{ error }}</div>
     {% endif %}
 
+    {% if recent_searches %}
+      <div class="recent-searches">
+        Recent:
+        {% for s in recent_searches %}
+          <a href="#" onclick="
+            document.querySelector('input[name=topic]').value='{{ s }}';
+            document.querySelector('form').submit();
+            return false;
+          ">{{ s }}</a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     {% if articles %}
       <p class="results-title">
-        Top results for <span>"{{ topic }}"</span>
+        Top results for <span class="topic">"{{ topic }}"</span>
+        {% if from_cache %}
+          <span class="cache-badge">Cached result</span>
+        {% endif %}
       </p>
 
       {% for article in articles %}
